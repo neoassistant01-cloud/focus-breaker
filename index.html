@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusBreaker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0D111C;
+            --card: #1A2332;
+            --accent: #00E599;
+            --text: #FFFFFF;
+            --text-muted: #6B7280;
+            --danger: #FF6B6B;
+            --warning: #F59E0B;
+            --disabled: #374151;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            color: var(--accent);
+        }
+        
+        .timer-display {
+            font-size: 72px;
+            font-weight: 300;
+            margin-bottom: 32px;
+            font-variant-numeric: tabular-nums;
+            transition: all 0.3s ease;
+        }
+        
+        .timer-display.running {
+            color: var(--accent);
+            text-shadow: 0 0 30px rgba(0, 229, 153, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+        
+        .duration-presets {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--disabled);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .preset-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+        
+        .preset-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg);
+        }
+        
+        .custom-duration {
+            margin-bottom: 32px;
+            display: none;
+        }
+        
+        .custom-duration.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .custom-duration input {
+            width: 80px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--disabled);
+            background: var(--card);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .custom-duration input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .custom-duration span {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 16px 32px;
+            border-radius: 8px;
+            border: none;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .start-btn {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        
+        .pause-btn {
+            background: var(--warning);
+            color: var(--bg);
+            display: none;
+        }
+        
+        .reset-btn {
+            background: transparent;
+            border: 1px solid var(--disabled);
+            color: var(--text-muted);
+        }
+        
+        .reset-btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text);
+        }
+        
+        .streak {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
+        
+        .streak-icon {
+            font-size: 24px;
+        }
+        
+        .streak-count {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(13, 17, 28, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .alert-overlay.visible {
+            display: flex;
+        }
+        
+        .alert-content {
+            text-align: center;
+            padding: 48px;
+            border-radius: 12px;
+            border: 3px solid var(--danger);
+            animation: alertPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 107, 107, 0.6); }
+        }
+        
+        .alert-content h2 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 16px;
+        }
+        
+        .alert-content p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        
+        .dismiss-btn {
+            padding: 16px 48px;
+            border-radius: 8px;
+            border: none;
+            background: var(--danger);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dismiss-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        footer {
+            font-size: 14px;
+            color: var(--disabled);
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .timer-display {
+                font-size: 56px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .control-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FocusBreaker</h1>
+        
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        
+        <div class="duration-presets">
+            <button class="preset-btn active" data-duration="25">25 min</button>
+            <button class="preset-btn" data-duration="45">45 min</button>
+            <button class="preset-btn" data-duration="60">60 min</button>
+            <button class="preset-btn" data-duration="custom">Custom</button>
+        </div>
+        
+        <div class="custom-duration" id="customDuration">
+            <input type="number" id="customInput" min="1" max="180" value="25" placeholder="25">
+            <span>min</span>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn start-btn" id="startBtn">Start</button>
+            <button class="control-btn pause-btn" id="pauseBtn">Pause</button>
+            <button class="control-btn reset-btn" id="resetBtn">Reset</button>
+        </div>
+        
+        <div class="streak">
+            <span class="streak-icon">🔥</span>
+            <span><span class="streak-count" id="streakCount">0</span> sessions today</span>
+        </div>
+        
+        <footer>Stay focused. Break the rabbit hole.</footer>
+    </div>
+    
+    <div class="alert-overlay" id="alertOverlay">
+        <div class="alert-content">
+            <h2>Time's Up!</h2>
+            <p>Great focus session. Take a break.</p>
+            <button class="dismiss-btn" id="dismissBtn">Got it</button>
+        </div>
+    </div>
+    
+    <script>
+        const timerDisplay = document.getElementById('timerDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        const customDuration = document.getElementById('customDuration');
+        const customInput = document.getElementById('customInput');
+        const streakCount = document.getElementById('streakCount');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const dismissBtn = document.getElementById('dismissBtn');
+        
+        let selectedDuration = 25;
+        let timeRemaining = 25 * 60;
+        let timerInterval = null;
+        let isRunning = false;
+        
+        // Audio context for beep
+        let audioContext = null;
+        
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function playAlertSound() {
+            try {
+                initAudio();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1100, audioContext.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+        
+        // Load streak from localStorage
+        function loadStreak() {
+            const today = new Date().toDateString();
+            try {
+                const data = JSON.parse(localStorage.getItem('focusBreaker_data'));
+                if (data && data.lastDate === today) {
+                    return data.streak || 0;
+                }
+            } catch (e) {}
+            return 0;
+        }
+        
+        // Save streak to localStorage
+        function saveStreak(streak) {
+            const today = new Date().toDateString();
+            try {
+                localStorage.setItem('focusBreaker_data', JSON.stringify({
+                    streak: streak,
+                    lastDate: today
+                }));
+            } catch (e) {}
+        }
+        
+        // Update streak display
+        function updateStreakDisplay() {
+            streakCount.textContent = loadStreak();
+        }
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Update timer display
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeRemaining);
+            
+            if (isRunning) {
+                timerDisplay.classList.add('running');
+            } else {
+                timerDisplay.classList.remove('running');
+            }
+            
+            // Update button visibility
+            if (isRunning) {
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = 'block';
+            } else {
+                startBtn.style.display = 'block';
+                pauseBtn.style.display = 'none';
+            }
+        }
+        
+        // Start timer
+        function startTimer() {
+            initAudio();
+            isRunning = true;
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                updateDisplay();
+                
+                if (timeRemaining <= 0) {
+                    completeSession();
+                }
+            }, 1000);
+            updateDisplay();
+        }
+        
+        // Pause timer
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            updateDisplay();
+        }
+        
+        // Reset timer
+        function resetTimer() {
+            pauseTimer();
+            timeRemaining = selectedDuration * 60;
+            updateDisplay();
+        }
+        
+        // Complete session
+        function completeSession() {
+            pauseTimer();
+            playAlertSound();
+            
+            const streak = loadStreak() + 1;
+            saveStreak(streak);
+            updateStreakDisplay();
+            
+            alertOverlay.classList.add('visible');
+        }
+        
+        // Dismiss alert
+        function dismissAlert() {
+            alertOverlay.classList.remove('visible');
+            timeRemaining = selectedDuration * 60;
+            updateDisplay();
+        }
+        
+        // Select duration
+        function selectDuration(duration) {
+            if (duration === 'custom') {
+                customDuration.classList.add('visible');
+                selectedDuration = parseInt(customInput.value) || 25;
+            } else {
+                customDuration.classList.remove('visible');
+                presetBtns.forEach(btn => {
+                    if (btn.dataset.duration === 'custom') return;
+                    btn.classList.toggle('active', btn.dataset.duration === duration);
+                });
+                selectedDuration = parseInt(duration);
+            }
+            
+            resetTimer();
+        }
+        
+        // Event listeners
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectDuration(btn.dataset.duration);
+            });
+        });
+        
+        customInput.addEventListener('change', () => {
+            let val = parseInt(customInput.value);
+            if (isNaN(val) || val < 1) val = 25;
+            if (val > 180) val = 180;
+            customInput.value = val;
+            selectedDuration = val;
+            resetTimer();
+        });
+        
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        dismissBtn.addEventListener('click', dismissAlert);
+        
+        // Initialize
+        updateStreakDisplay();
+        updateDisplay();
+    </script>
+</body>
+</html>
