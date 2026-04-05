@@ -8,11 +8,12 @@ redirects = []
 
 [build]
 publish = "/opt/openclaw/mvp-projects/focus-breaker"
-publishOrigin = "default"
+publishOrigin = "config"
 
 [build.environment]
 
 [build.processing]
+skip_processing = true
 
 [build.processing.css]
 
